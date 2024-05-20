@@ -118,8 +118,6 @@ const ContractProvider = ({ children }) => {
 
     const managerAddress = manager.address;
 
-    console.log("balance", await token0.balanceOf(account));
-
     Promise.all([
       token0.allowance(account, managerAddress),
       token1.allowance(account, managerAddress),
