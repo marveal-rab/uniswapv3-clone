@@ -2,9 +2,11 @@ import {
   createWeb3Modal,
   defaultConfig,
   useWeb3ModalProvider,
-} from "@web3modal/ethers/react";
-import { createContext, useEffect, useState } from "react";
+  useWeb3ModalAccount,
+} from "@web3modal/ethers5/react";
 import { ethers } from "ethers";
+import { createContext, useEffect, useState } from "react";
+import { Contracts } from "../config";
 
 // 1. Get projectId
 const projectId = process.env.REACT_APP_PROJECT_ID;
@@ -16,6 +18,13 @@ const mainnet = {
   currency: "ETH",
   explorerUrl: "https://etherscan.io",
   rpcUrl: "https://cloudflare-eth.com",
+};
+const anvil = {
+  chainId: 31337,
+  name: "Anvil",
+  currency: "ETH",
+  // explorerUrl: "https://etherscan.io",
+  rpcUrl: "http://127.0.0.1:8545",
 };
 
 // 3. Create a metadata object
@@ -42,7 +51,7 @@ const ethersConfig = defaultConfig({
 // 5. Create a Web3Modal instance
 createWeb3Modal({
   ethersConfig,
-  chains: [mainnet],
+  chains: [mainnet, anvil],
   projectId,
   enableAnalytics: true, // Optional - defaults to your Cloud configuration
 });
@@ -50,64 +59,66 @@ createWeb3Modal({
 export const ContractContext = createContext();
 
 const ContractProvider = ({ children }) => {
+  const { address: account, isConnected } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
 
   const [manager, setManager] = useState();
   const [ethToken, setETHToken] = useState();
   const [usdcToken, setUSDCToken] = useState();
 
-  const ethTokenAddress = "";
-  const ethTokenAbi = [];
-
-  const usdcTokenAddress = "";
-  const usdcTokenAbi = [];
-
-  const managerAddress = "";
-  const managerAbi = [];
-
-  const poolAddress = "";
-  const poolAbi = [];
-
   useEffect(() => {
-    // setETHToken(
-    //   new Contract(
-    //     ethTokenAddress,
-    //     ethTokenAbi,
-    //     new BrowserProvider(walletProvider).getSigner(),
-    //   ),
-    // );
-    // setUSDCToken(
-    //   new Contract(
-    //     usdcTokenAddress,
-    //     usdcTokenAbi,
-    //     new BrowserProvider(walletProvider).getSigner(),
-    //   ),
-    // );
-    // setManager(
-    //   new Contract(
-    //     managerAddress,
-    //     managerAbi,
-    //     new BrowserProvider(walletProvider).getSigner(),
-    //   ),
-    // );
-  }, [walletProvider]);
+    const init = async () => {
+      if (isConnected) {
+        const signer = new ethers.providers.Web3Provider(
+          walletProvider,
+        ).getSigner();
+        setETHToken(
+          new ethers.Contract(Contracts.ETH.address, Contracts.ETH.abi, signer),
+        );
+        setUSDCToken(
+          new ethers.Contract(
+            Contracts.USDC.address,
+            Contracts.USDC.abi,
+            signer,
+          ),
+        );
+        setManager(
+          new ethers.Contract(
+            Contracts.MANAGER.address,
+            Contracts.MANAGER.abi,
+            signer,
+          ),
+        );
+      }
+    };
+    init();
+    return () => {
+      setManager(undefined);
+      setETHToken(undefined);
+      setUSDCToken(undefined);
+    };
+  }, [walletProvider, isConnected]);
 
-  const addLiquidity = async (account) => {
+  const addLiquidity = async () => {
     const token0 = ethToken;
     const token1 = usdcToken;
     if (!token0 || !token1) {
       return;
     }
-    const amount0 = ethers.parseEther("0.998976618347425280");
-    const amount1 = ethers.parseEther("5000"); // 5000 USDC
+    const amount0 = ethers.utils.parseEther("0.998976618347425280");
+    const amount1 = ethers.utils.parseEther("5000"); // 5000 USDC
     const lowerTick = 84222;
     const upperTick = 86129;
-    const liquidity = ethers.getBigInt("1517882343751509868544");
+    const liquidity = ethers.BigNumber.from("1517882343751509868544");
 
-    const extra = ethers.AbiCoder.defaultAbiCoder().encode(
+    const extra = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "address"],
       [token0.address, token1.address, account],
     );
+
+    const managerAddress = manager.address;
+
+    console.log("balance", await token0.balanceOf(account));
 
     Promise.all([
       token0.allowance(account, managerAddress),
@@ -132,7 +143,13 @@ const ContractProvider = ({ children }) => {
         ])
           .then(() => {
             return manager
-              .mint(poolAddress, lowerTick, upperTick, liquidity, extra)
+              .mint(
+                Contracts.POOL.address,
+                lowerTick,
+                upperTick,
+                liquidity,
+                extra,
+              )
               .then((tx) => {
                 tx.wait();
               });
@@ -148,10 +165,48 @@ const ContractProvider = ({ children }) => {
         console.error(err);
       });
   };
+
+  const swap = async (amount, token, targetToken) => {
+    const token0 = ethToken;
+    const token1 = usdcToken;
+    if (!token0 || !token1) {
+      return;
+    }
+    const amountWei = ethers.utils.parseEther(amount);
+    const extra = ethers.utils.defaultAbiCoder.encode(
+      ["address", "address", "address"],
+      [await token0.getAddress(), await token1.getAddress(), account],
+    );
+    token
+      .allowance(account, Contracts.MANAGER.address)
+      .then((allowance) => {
+        if (allowance.lt(amountWei)) {
+          return token
+            .approve(Contracts.MANAGER.address, amountWei)
+            .then((tx) => tx.wait());
+        }
+      })
+      .then(() => {
+        return manager
+          .swap(Contracts.POOL.address, extra)
+          .then((tx) => tx.wait());
+      })
+      .then(() => {
+        alert("Swap succeeded!");
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Failed!");
+      });
+  };
+
   return (
     <ContractContext.Provider
       value={{
         addLiquidity,
+        swap,
+        ethToken,
+        usdcToken,
       }}
     >
       {children}
