@@ -62,6 +62,7 @@ const ContractProvider = ({ children }) => {
   const { address: account, isConnected } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
 
+  const [pool, setPool] = useState();
   const [manager, setManager] = useState();
   const [ethToken, setETHToken] = useState();
   const [usdcToken, setUSDCToken] = useState();
@@ -89,10 +90,18 @@ const ContractProvider = ({ children }) => {
             signer,
           ),
         );
+        setPool(
+          new ethers.Contract(
+            Contracts.POOL.address,
+            Contracts.POOL.abi,
+            signer,
+          ),
+        );
       }
     };
     init();
     return () => {
+      setPool(undefined);
       setManager(undefined);
       setETHToken(undefined);
       setUSDCToken(undefined);
@@ -173,14 +182,15 @@ const ContractProvider = ({ children }) => {
     const amountWei = ethers.utils.parseEther(amount);
     const extra = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "address"],
-      [await token0.getAddress(), await token1.getAddress(), account],
+      [token0.address, token1.address, account],
     );
+    const managerAddress = manager.address;
     token
-      .allowance(account, Contracts.MANAGER.address)
+      .allowance(account, managerAddress)
       .then((allowance) => {
         if (allowance.lt(amountWei)) {
           return token
-            .approve(Contracts.MANAGER.address, amountWei)
+            .approve(managerAddress, amountWei)
             .then((tx) => tx.wait());
         }
       })
@@ -203,6 +213,7 @@ const ContractProvider = ({ children }) => {
       value={{
         addLiquidity,
         swap,
+        pool,
         ethToken,
         usdcToken,
       }}
