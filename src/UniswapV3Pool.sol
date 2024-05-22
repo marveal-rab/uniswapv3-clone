@@ -4,6 +4,7 @@ pragma solidity ^0.8.14;
 import {Tick} from "./lib/Tick.sol";
 import {Position} from "./lib/Position.sol";
 import {Error} from "./lib/Error.sol";
+import {TickBitmap} from "./lib/TickBitmap.sol";
 import {IERC20} from "./interface/IERC20.sol";
 import {IUniswapV3MintCallback} from "./interface/IUniswapV3MintCallback.sol";
 import {IUniswapV3SwapCallback} from "./interface/IUniswapV3SwapCallback.sol";
@@ -12,6 +13,7 @@ contract UniswapV3Pool {
     using Tick for mapping(int24 => Tick.Info);
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
+    using TickBitmap for mapping(int16 => uint256);
 
     event Mint(
         address sender,
@@ -57,6 +59,8 @@ contract UniswapV3Pool {
     mapping(int24 => Tick.Info) public ticks;
     // Positions info
     mapping(bytes32 => Position.Info) public positions;
+    // tick bit map
+    mapping(int16 => uint256) public tickBitmap;
 
     struct CallbackData {
         address token0;
@@ -89,8 +93,14 @@ contract UniswapV3Pool {
             revert Error.ZeroLiquidity();
         }
 
-        ticks.update(lowerTick, amount);
-        ticks.update(upperTick, amount);
+        bool flippedLower = ticks.update(lowerTick, amount);
+        bool flippedUpper = ticks.update(upperTick, amount);
+        if (flippedLower) {
+            tickBitmap.flipTick(lowerTick, 1);
+        }
+        if (flippedUpper) {
+            tickBitmap.flipTick(upperTick, 1);
+        }
 
         Position.Info storage position = positions.get(owner, lowerTick, upperTick);
         position.update(amount);
