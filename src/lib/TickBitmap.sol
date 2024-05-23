@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.14;
 
+import {BitMath} from "./BitMath.sol";
+
 library TickBitmap {
     /**
      * wordPos = tick / 256;
