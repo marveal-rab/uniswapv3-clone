@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.19;
+
+import {IERC20} from "./interface/IERC20.sol";
+import {IUniswapV3MintCallback} from "./interface/IUniswapV3MintCallback.sol";
+import {IUniswapV3SwapCallback} from "./interface/IUniswapV3SwapCallback.sol";
 
 import {Tick} from "./lib/Tick.sol";
 import {Position} from "./lib/Position.sol";
 import {Error} from "./lib/Error.sol";
 import {TickBitmap} from "./lib/TickBitmap.sol";
-import {IERC20} from "./interface/IERC20.sol";
 import {SwapMath} from "./lib/SwapMath.sol";
-import {IUniswapV3MintCallback} from "./interface/IUniswapV3MintCallback.sol";
-import {IUniswapV3SwapCallback} from "./interface/IUniswapV3SwapCallback.sol";
+import {TickMath} from "./lib/TickMath.sol";
 
 contract UniswapV3Pool {
     using Tick for mapping(int24 => Tick.Info);
@@ -163,7 +165,7 @@ contract UniswapV3Pool {
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
             (step.nextTick,) = tickBitmap.nextInitializedTickWithinOneWord(state.tick, 1, zeroForOne);
-            step.sqrtPriceNextX96 = tickBitmap.getSqrtRatioAtTick(step.nextTick);
+            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.nextTick);
 
             (state.sqrtPriceX96, step.amountIn, step.amountOut) = SwapMath.computeSwapStep(
                 step.sqrtPriceStartX96, step.sqrtPriceNextX96, liquidity, state.amountSpecifiedRemaining
@@ -171,7 +173,7 @@ contract UniswapV3Pool {
 
             state.amountSpecifiedRemaining -= step.amountIn;
             state.amountCalculated += step.amountOut;
-            state.tick = TickMath.getTickSqrtRatio(state.sqrtPriceX96);
+            state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
         }
 
         if (state.tick != _slot0.tick) {
@@ -184,7 +186,7 @@ contract UniswapV3Pool {
 
         if (zeroForOne) {
             IERC20(token1).transfer(receipient, uint256(-amount1));
-            uint256 blaance0Before = balance0();
+            uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             if (balance0Before + uint256(amount0) > balance0()) {
                 revert Error.InsufficientInputAmount();

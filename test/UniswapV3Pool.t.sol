@@ -93,7 +93,7 @@ contract UniswapV3PoolTest is Test {
 
         int256 userBalance0Before = int256(token0.balanceOf(address(this)));
 
-        (int256 amount0Delta, int256 amount1Delta) = pool.swap(address(this), "");
+        (int256 amount0Delta, int256 amount1Delta) = pool.swap(address(this), true, 42 ether, "");
 
         assertEq(amount0Delta, -0.008396714242162444 ether, "invalid ETH out");
         assertEq(amount1Delta, 42 ether, "invalid USDC in");
@@ -148,11 +148,11 @@ contract UniswapV3PoolTest is Test {
         if (transferInSwapCallback) {
             UniswapV3Pool.CallbackData memory extra = abi.decode(data, (UniswapV3Pool.CallbackData));
             if (amount0 > 0) {
-                IERC20(extra.token0).transferFrom(extra.payer, msg.sender, amount0);
+                IERC20(extra.token0).transferFrom(extra.payer, msg.sender, uint256(amount0));
             }
 
             if (amount1 > 0) {
-                IERC20(extra.token1).transferFrom(extra.payer, msg.sender, amount1);
+                IERC20(extra.token1).transferFrom(extra.payer, msg.sender, uint256(amount1));
             }
         }
     }

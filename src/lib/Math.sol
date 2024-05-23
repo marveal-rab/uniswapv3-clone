@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.19;
 
 import {FixedPoint96} from "./FixedPoint96.sol";
+import "prb-math/Common.sol";
 
 library Math {
     function calcAmount0Delta(uint160 sqrtPriceAX96, uint160 sqrtPriceBX96, uint128 liquidity)
@@ -21,14 +22,6 @@ library Math {
             ),
             sqrtPriceAX96
         );
-    }
-
-    function mulDivRoundingUp(uint256 a, uint256 b, uint256 deniminator) internal pure returns (uint256 result) {
-        result = PRBMath.mulDiv(a, b, deniminator);
-        if (mulmod(a, b, deniminator) > 0) {
-            require(result < type(uint256).max);
-            result++;
-        }
     }
 
     function calcAmount1Delta(uint160 sqrtPriceAX96, uint160 sqrtPriceBX96, uint128 liquidity)
@@ -81,7 +74,7 @@ library Math {
     }
 
     function mulDivRoundingUp(uint256 a, uint256 b, uint256 denominator) internal pure returns (uint256 result) {
-        result = PRBMath.mulDiv(a, b, denominator);
+        result = mulDiv(a, b, denominator);
         if (mulmod(a, b, denominator) > 0) {
             require(result < type(uint256).max);
             result++;

@@ -6,8 +6,13 @@
     "editor.defaultFormatter": "JuanBlanco.solidity"
   },
   "solidity.formatter": "forge",
-  "solidity.compileUsingRemoteVersion": "v0.8.25",
+  "solidity.compileUsingRemoteVersion": "latest",
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
-  }
+  },
+  "solidity.remappingsUnix": [
+    "forge-std=lib/forge-std/src",
+    "solmate=lib/solmate/src",
+    "prb-math=lib/prb-math/src"
+  ],
 }

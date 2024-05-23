@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.19;
 
 library BitMath {
     function mostSignificantBit(uint256 x) internal pure returns (uint8 r) {

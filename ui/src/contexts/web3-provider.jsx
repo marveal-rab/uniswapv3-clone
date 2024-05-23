@@ -6,7 +6,7 @@ import {
 } from "@web3modal/ethers5/react";
 import { ethers } from "ethers";
 import { createContext, useEffect, useState } from "react";
-import { Contracts } from "../config";
+import { Contracts, getContract } from "../config";
 
 // 1. Get projectId
 const projectId = process.env.REACT_APP_PROJECT_ID;
@@ -64,6 +64,7 @@ const ContractProvider = ({ children }) => {
 
   const [pool, setPool] = useState();
   const [manager, setManager] = useState();
+  const [quoter, setQuoter] = useState();
   const [ethToken, setETHToken] = useState();
   const [usdcToken, setUSDCToken] = useState();
 
@@ -73,30 +74,11 @@ const ContractProvider = ({ children }) => {
         const signer = new ethers.providers.Web3Provider(
           walletProvider,
         ).getSigner();
-        setETHToken(
-          new ethers.Contract(Contracts.ETH.address, Contracts.ETH.abi, signer),
-        );
-        setUSDCToken(
-          new ethers.Contract(
-            Contracts.USDC.address,
-            Contracts.USDC.abi,
-            signer,
-          ),
-        );
-        setManager(
-          new ethers.Contract(
-            Contracts.MANAGER.address,
-            Contracts.MANAGER.abi,
-            signer,
-          ),
-        );
-        setPool(
-          new ethers.Contract(
-            Contracts.POOL.address,
-            Contracts.POOL.abi,
-            signer,
-          ),
-        );
+        setETHToken(getContract("ETH", signer));
+        setUSDCToken(getContract("USDC", signer));
+        setManager(getContract("MANAGER", signer));
+        setPool(getContract("POOL", signer));
+        setQuoter(getContract("QUOTER", signer));
       }
     };
     init();
@@ -105,6 +87,7 @@ const ContractProvider = ({ children }) => {
       setManager(undefined);
       setETHToken(undefined);
       setUSDCToken(undefined);
+      setQuoter(undefined);
     };
   }, [walletProvider, isConnected]);
 
@@ -208,11 +191,33 @@ const ContractProvider = ({ children }) => {
       });
   };
 
+  const quote = async (amount, zeroForOne) => {
+    console.log("pool", Contracts.POOL.address);
+    console.log("amountIn", ethers.utils.parseEther(amount));
+    console.log("zeroForOne", zeroForOne);
+    quoter.callStatic
+      .quote({
+        pool: Contracts.POOL.address,
+        amountIn: ethers.utils.parseEther(amount),
+        zeroForOne: zeroForOne,
+      })
+      .then((res) => {
+        console.log(res);
+        const { amountOut } = res;
+        return ethers.utils.formatEther(amountOut);
+      })
+      .catch((err) => {
+        console.error(err);
+        return 0;
+      });
+  };
+
   return (
     <ContractContext.Provider
       value={{
         addLiquidity,
         swap,
+        quote,
         pool,
         ethToken,
         usdcToken,
