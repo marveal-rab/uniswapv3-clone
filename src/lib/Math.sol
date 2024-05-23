@@ -69,7 +69,7 @@ library Math {
                 return uint160(mulDivRoundingUp(numerator, sqrtPriceX96, denominator));
             }
         }
-        return uint160(divRoundinUp(numerator, (numerator / sqrtPriceX96) + amountIn));
+        return uint160(divRoundingUp(numerator, (numerator / sqrtPriceX96) + amountIn));
     }
 
     function getNextSqrtPriceFromAmount1RoundingDown(uint160 sqrtPriceX96, uint128 liquidity, uint256 amountIn)
@@ -78,5 +78,19 @@ library Math {
         returns (uint160)
     {
         return sqrtPriceX96 + uint160((amountIn << FixedPoint96.RESOLUTION) / liquidity);
+    }
+
+    function mulDivRoundingUp(uint256 a, uint256 b, uint256 denominator) internal pure returns (uint256 result) {
+        result = PRBMath.mulDiv(a, b, denominator);
+        if (mulmod(a, b, denominator) > 0) {
+            require(result < type(uint256).max);
+            result++;
+        }
+    }
+
+    function divRoundingUp(uint256 numerator, uint256 denominator) internal pure returns (uint256 result) {
+        assembly {
+            result := add(div(numerator, denominator), gt(mod(numerator, denominator), 0))
+        }
     }
 }
