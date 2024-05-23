@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.14;
 
+import {FixedPoint96} from "./FixedPoint96.sol";
+
 library Math {
     function calcAmount0Delta(uint160 sqrtPriceAX96, uint160 sqrtPriceBX96, uint128 liquidity)
         internal
@@ -41,5 +43,40 @@ library Math {
         require(sqrtPriceAX96 > 0);
 
         amount1 = mulDivRoundingUp(liquidity, (sqrtPriceBX96 - sqrtPriceAX96), FixedPoint96.Q96);
+    }
+
+    function getNextSqrtPriceFromInput(uint160 sqrtPriceX96, uint128 liquidity, uint256 amountIn, bool zeroOrOne)
+        internal
+        pure
+        returns (uint160 sqrtPriceNextX96)
+    {
+        sqrtPriceNextX96 = zeroOrOne
+            ? getNextSqrtPriceFromAmount0RoundingUp(sqrtPriceX96, liquidity, amountIn)
+            : getNextSqrtPriceFromAmount1RoundingDown(sqrtPriceX96, liquidity, amountIn);
+    }
+
+    function getNextSqrtPriceFromAmount0RoundingUp(uint160 sqrtPriceX96, uint128 liquidity, uint256 amountIn)
+        internal
+        pure
+        returns (uint160 sqrtPriceNextX96)
+    {
+        uint256 numerator = uint256(liquidity) << FixedPoint96.RESOLUTION;
+        uint256 product = amountIn * sqrtPriceX96;
+
+        if (product / amountIn == sqrtPriceX96) {
+            uint256 denominator = numerator + product;
+            if (denominator >= numerator) {
+                return uint160(mulDivRoundingUp(numerator, sqrtPriceX96, denominator));
+            }
+        }
+        return uint160(divRoundinUp(numerator, (numerator / sqrtPriceX96) + amountIn));
+    }
+
+    function getNextSqrtPriceFromAmount1RoundingDown(uint160 sqrtPriceX96, uint128 liquidity, uint256 amountIn)
+        internal
+        pure
+        returns (uint160)
+    {
+        return sqrtPriceX96 + uint160((amountIn << FixedPoint96.RESOLUTION) / liquidity);
     }
 }
