@@ -52,7 +52,7 @@ const SwapForm = () => {
 
   const handleSwap = async (event) => {
     event.stopPropagation();
-    await swap(amount, sourceToken.token, targetToken.token);
+    await swap(amount, sourceToken.token, zeroForOne, targetToken.token);
   };
 
   const handleChangeInput = async (event) => {

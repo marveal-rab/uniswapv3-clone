@@ -133,13 +133,7 @@ const ContractProvider = ({ children }) => {
         ])
           .then(() => {
             return manager
-              .mint(
-                Contracts.POOL.address,
-                lowerTick,
-                upperTick,
-                liquidity,
-                extra,
-              )
+              .mint(pool.address, lowerTick, upperTick, liquidity, extra)
               .then((tx) => {
                 tx.wait();
               });
@@ -156,7 +150,7 @@ const ContractProvider = ({ children }) => {
       });
   };
 
-  const swap = async (amount, token, targetToken) => {
+  const swap = async (amount, token, zeroForOne, targetToken) => {
     const token0 = ethToken;
     const token1 = usdcToken;
     if (!token0 || !token1) {
@@ -179,7 +173,7 @@ const ContractProvider = ({ children }) => {
       })
       .then(() => {
         return manager
-          .swap(Contracts.POOL.address, extra)
+          .swap(pool.address, zeroForOne, amountWei, extra)
           .then((tx) => tx.wait());
       })
       .then(() => {
@@ -192,12 +186,13 @@ const ContractProvider = ({ children }) => {
   };
 
   const quote = async (amount, zeroForOne) => {
+    console.log("quoter", quoter);
     console.log("pool", Contracts.POOL.address);
     console.log("amountIn", ethers.utils.parseEther(amount));
     console.log("zeroForOne", zeroForOne);
     quoter.callStatic
       .quote({
-        pool: Contracts.POOL.address,
+        pool: pool.address,
         amountIn: ethers.utils.parseEther(amount),
         zeroForOne: zeroForOne,
       })
