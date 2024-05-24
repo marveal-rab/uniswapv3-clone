@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useContext, useState, useEffect } from "react";
-import { useWeb3ModalAccount } from "@web3modal/ethers5/react";
-import { ContractContext } from "../../contexts/web3-provider";
+import { useWeb3ModalAccount } from "@web3modal/ethers/react";
+import { ContractContext } from "@/app/context/web3-provider";
 import { TfiExchangeVertical } from "react-icons/tfi";
 
 class Token {

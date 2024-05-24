@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useEffect, useReducer, useContext } from "react";
 import { ethers } from "ethers";
-import { ContractContext } from "../contexts/web3-provider";
+import { ContractContext } from "@/app/context/web3-provider";
 
 const getEvents = (pool) => {
   return Promise.all([

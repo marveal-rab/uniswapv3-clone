@@ -1,15 +1,17 @@
+"use client";
+
 import {
   createWeb3Modal,
   defaultConfig,
   useWeb3ModalProvider,
   useWeb3ModalAccount,
-} from "@web3modal/ethers5/react";
+} from "@web3modal/ethers/react";
 import { ethers } from "ethers";
 import { createContext, useEffect, useState } from "react";
-import { Contracts, getContract } from "../config";
+import { Contracts, getContract } from "@/app/config";
 
 // 1. Get projectId
-const projectId = process.env.REACT_APP_PROJECT_ID;
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
 // 2. Set chains
 const mainnet = {
@@ -71,7 +73,7 @@ const ContractProvider = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       if (isConnected) {
-        const signer = new ethers.providers.Web3Provider(
+        const signer = new ethers.BrowserProvider(
           walletProvider,
         ).getSigner();
         setETHToken(getContract("ETH", signer));
@@ -97,13 +99,13 @@ const ContractProvider = ({ children }) => {
     if (!token0 || !token1) {
       return;
     }
-    const amount0 = ethers.utils.parseEther("0.998976618347425280");
-    const amount1 = ethers.utils.parseEther("5000"); // 5000 USDC
+    const amount0 = ethers.parseEther("0.998976618347425280");
+    const amount1 = ethers.parseEther("5000"); // 5000 USDC
     const lowerTick = 84222;
     const upperTick = 86129;
-    const liquidity = ethers.BigNumber.from("1517882343751509868544");
+    const liquidity = ethers.toBigInt("1517882343751509868544");
 
-    const extra = ethers.utils.defaultAbiCoder.encode(
+    const extra = ethers.AbiCoder.defaultAbiCoder().encode(
       ["address", "address", "address"],
       [token0.address, token1.address, account],
     );
@@ -156,8 +158,8 @@ const ContractProvider = ({ children }) => {
     if (!token0 || !token1) {
       return;
     }
-    const amountWei = ethers.utils.parseEther(amount);
-    const extra = ethers.utils.defaultAbiCoder.encode(
+    const amountWei = ethers.parseEther(amount);
+    const extra = ethers.AbiCoder.defaultAbiCoder().encode(
       ["address", "address", "address"],
       [token0.address, token1.address, account],
     );
@@ -188,12 +190,11 @@ const ContractProvider = ({ children }) => {
   const quote = async (amount, zeroForOne) => {
     console.log("quoter", quoter);
     console.log("pool", Contracts.POOL.address);
-    console.log("amountIn", ethers.utils.parseEther(amount));
+    console.log("amountIn", ethers.parseEther(amount));
     console.log("zeroForOne", zeroForOne);
-    quoter.callStatic
-      .quote({
+    quoter.quote.staticCall({
         pool: pool.address,
-        amountIn: ethers.utils.parseEther(amount),
+        amountIn: ethers.parseEther(amount),
         zeroForOne: zeroForOne,
       })
       .then((res) => {

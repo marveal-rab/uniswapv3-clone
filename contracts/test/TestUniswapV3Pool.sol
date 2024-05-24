@@ -13,6 +13,36 @@ contract TestUniswapV3Pool {
         transferInSwapCallback = _transferInSwapCallback;
     }
 
+    function mint(
+        address poolAddress,
+        int24 lowerTick,
+        int24 upperTick,
+        uint128 liquidity,
+        bytes calldata data
+    ) public {
+        UniswapV3Pool(poolAddress).mint(
+            msg.sender,
+            lowerTick,
+            upperTick,
+            liquidity,
+            data
+        );
+    }
+
+    function swap(
+        address poolAddress,
+        bool zeroForOne,
+        uint256 amountSpecified,
+        bytes calldata data
+    ) public {
+        UniswapV3Pool(poolAddress).swap(
+            msg.sender,
+            zeroForOne,
+            amountSpecified,
+            data
+        );
+    }
+
     function uniswapV3MintCallback(
         uint256 amount0,
         uint256 amount1,
